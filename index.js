@@ -27,7 +27,7 @@ app.get("/", function (req, res) {
 app.post("/validar", function (req, res) {
   const { nombres, celular, correo, mensaje } = req.body;
   const registrar =
-    "INSERT INTO info (nombres, celular, correo, mensaje) VALUES (?, ?, ?, ?)";
+    "INSERT INTO info (nombre, telefono, correo, comentario) VALUES (?, ?, ?, ?)";
 
   conexion.execute(registrar, [nombres, celular, correo, mensaje], function (error) {
     if (error) {
