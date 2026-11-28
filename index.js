@@ -1,56 +1,50 @@
 const express = require('express');
 
-const mysql=require("mysql2");
-const app = express()
+const mysql = require("mysql2");
+const app = express();
 app.use("/css", express.static(__dirname + "/css"));
 app.use("/img", express.static(__dirname + "/img"));
 app.use("/js", express.static(__dirname + "/js"));
 
-let conexion=mysql.createConnection({
-    /*
-    host:"localhost",
-    database:"viajes",
-    user:"root",
-    password:""
-    */
-
+const conexion = mysql.createPool({
     host: process.env.MYSQLHOST,
-    port: process.env.MYSQLPORT,
+    port: Number(process.env.MYSQLPORT),
     database: process.env.MYSQLDATABASE,
     user: process.env.MYSQLUSER,
-    password: process.env.MYSQLPASSWORD
+    password: process.env.MYSQLPASSWORD,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 app.set("view engine", "ejs");
 app.use(express.json());
-app.use(express.urlencoded({extended:false}))
+app.use(express.urlencoded({ extended: false }));
 
-app.get('/', function(req, res){
-  res.sendFile(__dirname + '/index.html')
-})
-app.post('/validar', function(req, res){
-  const datos=req.body;
-  console.log(datos);
-  let nombres=datos.nombres;
-  let celular=datos.celular;
-  let correo=datos.correo;
-  let mensaje=datos.mensaje;
+app.get("/", function (req, res) {
+  res.sendFile(__dirname + "/index.html");
+});
 
-  let registrar= "INSERT INTO info (nombres, celular, correo, mensaje) VALUES ('"+nombres+"','"+celular+"','"+correo+"','"+mensaje+"')"
-conexion.query(registrar, function(error){
+app.post("/validar", function (req, res) {
+  const { nombres, celular, correo, mensaje } = req.body;
+  const registrar =
+    "INSERT INTO info (nombres, celular, correo, mensaje) VALUES (?, ?, ?, ?)";
+
+  conexion.execute(registrar, [nombres, celular, correo, mensaje], function (error) {
     if (error) {
-        throw error;
-    }else{
-        //console.log("Datos almacenados correctamente");
-        res.send(`
+      console.error("No se pudo guardar el formulario:", error.message);
+      return res.status(500).send("No se pudo enviar el mensaje. Inténtalo nuevamente.");
+    }
+
+    return res.send(`
             <script>
                 alert("Datos enviados correctamente");
                 window.location.href="/";
             </script>
             `);
-    }
-});
+  });
 });
 
-app.listen(3000, () => {
-  console.log("Servidor creado en localhost");
-})
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Servidor escuchando en el puerto ${port}`);
+});
